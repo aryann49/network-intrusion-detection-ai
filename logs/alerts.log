@@ -1,0 +1,75 @@
+2026-05-07 16:20:44 | NORMAL  | Record #00000 | Proto: tcp  | Service: ftp_data     | Bytes: 491
+2026-05-07 16:20:44 | NORMAL  | Record #00001 | Proto: udp  | Service: other        | Bytes: 146
+2026-05-07 16:20:44 | ATTACK  | Record #00002 | Category: DoS    | Label: neptune              | Proto: tcp  | Service: private      | Bytes: 0
+2026-05-07 16:20:45 | NORMAL  | Record #00003 | Proto: tcp  | Service: http         | Bytes: 232
+2026-05-07 16:20:45 | NORMAL  | Record #00004 | Proto: tcp  | Service: http         | Bytes: 199
+2026-05-07 16:20:45 | ATTACK  | Record #00005 | Category: DoS    | Label: neptune              | Proto: tcp  | Service: private      | Bytes: 0
+2026-05-07 16:20:46 | ATTACK  | Record #00006 | Category: DoS    | Label: neptune              | Proto: tcp  | Service: private      | Bytes: 0
+2026-05-07 16:20:46 | ATTACK  | Record #00007 | Category: DoS    | Label: neptune              | Proto: tcp  | Service: private      | Bytes: 0
+2026-05-07 16:20:46 | ATTACK  | Record #00008 | Category: DoS    | Label: neptune              | Proto: tcp  | Service: remote_job   | Bytes: 0
+2026-05-07 16:20:47 | ATTACK  | Record #00009 | Category: DoS    | Label: neptune              | Proto: tcp  | Service: private      | Bytes: 0
+2026-05-07 16:20:47 | ATTACK  | Record #00010 | Category: DoS    | Label: neptune              | Proto: tcp  | Service: private      | Bytes: 0
+2026-05-07 16:20:47 | ATTACK  | Record #00011 | Category: DoS    | Label: neptune              | Proto: tcp  | Service: private      | Bytes: 0
+2026-05-07 16:20:48 | NORMAL  | Record #00012 | Proto: tcp  | Service: http         | Bytes: 287
+2026-05-07 16:20:48 | ATTACK  | Record #00013 | Category: R2L    | Label: warezclient          | Proto: tcp  | Service: ftp_data     | Bytes: 334
+2026-05-07 16:20:48 | ATTACK  | Record #00014 | Category: DoS    | Label: neptune              | Proto: tcp  | Service: name         | Bytes: 0
+2026-05-07 16:20:49 | ATTACK  | Record #00015 | Category: DoS    | Label: neptune              | Proto: tcp  | Service: netbios_ns   | Bytes: 0
+2026-05-07 16:20:49 | NORMAL  | Record #00016 | Proto: tcp  | Service: http         | Bytes: 300
+2026-05-07 16:20:49 | ATTACK  | Record #00017 | Category: Probe  | Label: ipsweep              | Proto: icmp | Service: eco_i        | Bytes: 18
+2026-05-07 16:20:50 | NORMAL  | Record #00018 | Proto: tcp  | Service: http         | Bytes: 233
+2026-05-07 16:20:50 | NORMAL  | Record #00019 | Proto: tcp  | Service: http         | Bytes: 343
+2026-05-07 16:20:50 | ATTACK  | Record #00020 | Category: DoS    | Label: neptune              | Proto: tcp  | Service: mtp          | Bytes: 0
+2026-05-07 16:20:51 | ATTACK  | Record #00021 | Category: DoS    | Label: neptune              | Proto: tcp  | Service: private      | Bytes: 0
+2026-05-07 16:20:51 | NORMAL  | Record #00022 | Proto: tcp  | Service: http         | Bytes: 253
+2026-05-07 16:20:51 | NORMAL  | Record #00023 | Proto: udp  | Service: other        | Bytes: 147
+2026-05-07 16:20:52 | ATTACK  | Record #00024 | Category: DoS    | Label: neptune              | Proto: tcp  | Service: mtp          | Bytes: 0
+2026-05-07 16:20:52 | NORMAL  | Record #00025 | Proto: tcp  | Service: telnet       | Bytes: 437
+2026-05-07 16:20:52 | ATTACK  | Record #00026 | Category: DoS    | Label: neptune              | Proto: tcp  | Service: private      | Bytes: 0
+2026-05-07 16:20:53 | NORMAL  | Record #00027 | Proto: tcp  | Service: http         | Bytes: 227
+2026-05-07 16:20:53 | NORMAL  | Record #00028 | Proto: tcp  | Service: http         | Bytes: 215
+2026-05-07 16:20:53 | NORMAL  | Record #00029 | Proto: tcp  | Service: http         | Bytes: 241
+2026-05-07 16:20:54 | ATTACK  | Record #00030 | Category: Probe  | Label: ipsweep              | Proto: icmp | Service: eco_i        | Bytes: 8
+2026-05-07 16:20:54 | ATTACK  | Record #00031 | Category: DoS    | Label: neptune              | Proto: tcp  | Service: finger       | Bytes: 0
+2026-05-07 16:20:55 | NORMAL  | Record #00032 | Proto: tcp  | Service: http         | Bytes: 303
+2026-05-07 16:20:55 | ATTACK  | Record #00033 | Category: Probe  | Label: portsweep            | Proto: tcp  | Service: private      | Bytes: 0
+2026-05-07 16:20:55 | NORMAL  | Record #00034 | Proto: udp  | Service: domain_u     | Bytes: 45
+2026-05-07 16:20:56 | NORMAL  | Record #00035 | Proto: udp  | Service: private      | Bytes: 105
+2026-05-07 16:20:56 | NORMAL  | Record #00036 | Proto: udp  | Service: domain_u     | Bytes: 43
+2026-05-07 16:20:56 | ATTACK  | Record #00037 | Category: DoS    | Label: neptune              | Proto: tcp  | Service: supdup       | Bytes: 0
+2026-05-07 16:20:57 | NORMAL  | Record #00038 | Proto: tcp  | Service: http         | Bytes: 324
+2026-05-07 16:20:57 | ATTACK  | Record #00039 | Category: DoS    | Label: neptune              | Proto: tcp  | Service: uucp_path    | Bytes: 0
+2026-05-07 16:20:57 | ATTACK  | Record #00040 | Category: DoS    | Label: neptune              | Proto: tcp  | Service: ftp_data     | Bytes: 0
+2026-05-07 16:20:58 | ATTACK  | Record #00041 | Category: DoS    | Label: neptune              | Proto: tcp  | Service: Z39_50       | Bytes: 0
+2026-05-07 16:20:58 | NORMAL  | Record #00042 | Proto: tcp  | Service: smtp         | Bytes: 1591
+2026-05-07 16:20:58 | NORMAL  | Record #00043 | Proto: udp  | Service: other        | Bytes: 146
+2026-05-07 16:20:59 | NORMAL  | Record #00044 | Proto: tcp  | Service: http         | Bytes: 290
+2026-05-07 16:20:59 | ATTACK  | Record #00045 | Category: DoS    | Label: neptune              | Proto: tcp  | Service: csnet_ns     | Bytes: 0
+2026-05-07 16:21:00 | ATTACK  | Record #00046 | Category: DoS    | Label: teardrop             | Proto: udp  | Service: private      | Bytes: 28
+2026-05-07 16:21:00 | NORMAL  | Record #00047 | Proto: tcp  | Service: http         | Bytes: 255
+2026-05-07 16:21:00 | ATTACK  | Record #00048 | Category: R2L    | Label: warezclient          | Proto: tcp  | Service: ftp_data     | Bytes: 334
+2026-05-07 16:21:01 | ATTACK  | Record #00049 | Category: DoS    | Label: neptune              | Proto: tcp  | Service: ftp_data     | Bytes: 0
+2026-05-07 16:21:01 | NORMAL  | Record #00050 | Proto: tcp  | Service: http         | Bytes: 302
+2026-05-07 16:21:01 | ATTACK  | Record #00051 | Category: DoS    | Label: neptune              | Proto: tcp  | Service: private      | Bytes: 0
+2026-05-07 16:21:02 | ATTACK  | Record #00052 | Category: DoS    | Label: teardrop             | Proto: udp  | Service: private      | Bytes: 28
+2026-05-07 16:21:02 | NORMAL  | Record #00053 | Proto: tcp  | Service: http         | Bytes: 220
+2026-05-07 16:21:02 | NORMAL  | Record #00054 | Proto: udp  | Service: domain_u     | Bytes: 43
+2026-05-07 16:21:03 | NORMAL  | Record #00055 | Proto: udp  | Service: domain_u     | Bytes: 44
+2026-05-07 16:21:03 | ATTACK  | Record #00056 | Category: Probe  | Label: nmap                 | Proto: icmp | Service: eco_i        | Bytes: 8
+2026-05-07 16:21:04 | ATTACK  | Record #00057 | Category: DoS    | Label: neptune              | Proto: tcp  | Service: uucp         | Bytes: 0
+2026-05-07 16:21:04 | ATTACK  | Record #00058 | Category: DoS    | Label: neptune              | Proto: tcp  | Service: finger       | Bytes: 0
+2026-05-07 16:21:04 | NORMAL  | Record #00059 | Proto: udp  | Service: domain_u     | Bytes: 43
+2026-05-07 16:21:05 | NORMAL  | Record #00060 | Proto: tcp  | Service: ftp_data     | Bytes: 641
+2026-05-07 16:21:05 | ATTACK  | Record #00061 | Category: DoS    | Label: neptune              | Proto: tcp  | Service: private      | Bytes: 0
+2026-05-07 16:21:05 | ATTACK  | Record #00062 | Category: Probe  | Label: satan                | Proto: tcp  | Service: private      | Bytes: 0
+2026-05-07 16:21:06 | NORMAL  | Record #00063 | Proto: tcp  | Service: http         | Bytes: 310
+2026-05-07 16:21:06 | ATTACK  | Record #00064 | Category: DoS    | Label: neptune              | Proto: tcp  | Service: private      | Bytes: 0
+2026-05-07 16:21:06 | NORMAL  | Record #00065 | Proto: tcp  | Service: smtp         | Bytes: 696
+2026-05-07 16:21:07 | ATTACK  | Record #00066 | Category: Probe  | Label: portsweep            | Proto: tcp  | Service: netbios_dgm  | Bytes: 0
+2026-05-07 16:21:07 | ATTACK  | Record #00067 | Category: DoS    | Label: neptune              | Proto: tcp  | Service: http         | Bytes: 0
+2026-05-07 16:21:08 | ATTACK  | Record #00068 | Category: DoS    | Label: neptune              | Proto: tcp  | Service: netbios_dgm  | Bytes: 0
+2026-05-07 16:21:08 | ATTACK  | Record #00069 | Category: DoS    | Label: neptune              | Proto: tcp  | Service: supdup       | Bytes: 0
+2026-05-07 16:21:08 | NORMAL  | Record #00070 | Proto: tcp  | Service: http         | Bytes: 221
+2026-05-07 16:21:09 | ATTACK  | Record #00071 | Category: DoS    | Label: neptune              | Proto: tcp  | Service: private      | Bytes: 0
+2026-05-07 16:21:09 | NORMAL  | Record #00072 | Proto: icmp | Service: urp_i        | Bytes: 181
+2026-05-07 16:21:09 | NORMAL  | Record #00073 | Proto: udp  | Service: domain_u     | Bytes: 42
+2026-05-07 16:21:09 | ATTACK  | Record #00074 | Category: DoS    | Label: neptune              | Proto: tcp  | Service: private      | Bytes: 0
