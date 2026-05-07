@@ -16,6 +16,7 @@ Then open browser: http://127.0.0.1:5000
 import os
 import time
 import joblib
+import logging
 import threading
 import numpy as np
 import pandas as pd
@@ -24,6 +25,26 @@ from datetime import datetime
 from flask import Flask, render_template, jsonify
 from flask_socketio import SocketIO
 from sklearn.preprocessing import LabelEncoder
+
+
+# ─────────────────────────────────────────────
+#  ALERT LOGGER SETUP
+#  Writes every detection to logs/alerts.log
+#  File persists after server stops — complete audit trail
+# ─────────────────────────────────────────────
+
+os.makedirs("logs", exist_ok=True)
+
+alert_logger = logging.getLogger("ids_alerts")
+alert_logger.setLevel(logging.INFO)
+
+# File handler — writes to logs/alerts.log
+fh = logging.FileHandler("logs/alerts.log", encoding="utf-8")
+fh.setLevel(logging.INFO)
+fh.setFormatter(logging.Formatter("%(asctime)s | %(message)s",
+                                   datefmt="%Y-%m-%d %H:%M:%S"))
+alert_logger.addHandler(fh)
+alert_logger.propagate = False   # don't pollute Flask's own logger
 
 
 # ─────────────────────────────────────────────
@@ -243,6 +264,26 @@ def run_ids_engine():
         alerts.append(alert)
         if len(alerts) > 100:
             alerts.pop(0)
+
+        # ── Log to file (logs/alerts.log) ─────────────
+        # Every detection is written here permanently
+        # File survives server restarts — full audit trail
+        if is_attack:
+            alert_logger.warning(
+                f"ATTACK  | Record #{index:05d} | "
+                f"Category: {attack_category:<6} | "
+                f"Label: {attack_label:<20} | "
+                f"Proto: {alert['protocol']:<4} | "
+                f"Service: {alert['service']:<12} | "
+                f"Bytes: {alert['src_bytes']}"
+            )
+        else:
+            alert_logger.info(
+                f"NORMAL  | Record #{index:05d} | "
+                f"Proto: {alert['protocol']:<4} | "
+                f"Service: {alert['service']:<12} | "
+                f"Bytes: {alert['src_bytes']}"
+            )
 
         # ── Push to browser via SocketIO ─────────────
         # This is what makes the dashboard update live

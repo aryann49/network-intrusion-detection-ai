@@ -15,6 +15,11 @@ import joblib
 import numpy as np
 import pandas as pd
 
+import matplotlib
+matplotlib.use("Agg")   # non-interactive — works without a display window
+import matplotlib.pyplot as plt
+import seaborn as sns
+
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.preprocessing import LabelEncoder, StandardScaler
 from sklearn.model_selection import train_test_split
@@ -239,16 +244,17 @@ def train_model(X_train, y_train):
 #  STEP 4: EVALUATE
 # ─────────────────────────────────────────────
 
-def evaluate(model, X_test, y_test, label_encoder):
-    print("\n[4/5] Evaluating model on test set...")
+def evaluate(model, X_test, y_test, label_encoder, feature_names):
+    print("\n[4/5] Evaluating model — generating charts...")
+
+    os.makedirs("reports", exist_ok=True)
 
     y_pred = model.predict(X_test)
 
     accuracy = accuracy_score(y_test, y_pred)
     print(f"\n      ✅ Accuracy : {accuracy * 100:.2f}%")
 
-    # Only use labels that actually appear in test set or predictions
-    # (test set may have fewer attack types than training set)
+    # Only use labels present in test set or predictions
     present_labels = sorted(set(y_test) | set(y_pred))
     target_names   = label_encoder.inverse_transform(present_labels)
 
@@ -260,6 +266,90 @@ def evaluate(model, X_test, y_test, label_encoder):
     )
     print("\n      Classification Report:")
     print(report)
+
+    # ── Chart 1: Confusion Matrix ─────────────────
+    print("      Generating confusion matrix...")
+
+    cm = confusion_matrix(y_test, y_pred, labels=present_labels)
+
+    fig, ax = plt.subplots(figsize=(14, 10))
+    fig.patch.set_facecolor("#0d1117")
+    ax.set_facecolor("#0d1117")
+
+    sns.heatmap(
+        cm,
+        annot=True,
+        fmt="d",
+        cmap="Blues",
+        xticklabels=target_names,
+        yticklabels=target_names,
+        ax=ax,
+        linewidths=0.5,
+        linecolor="#1a2332",
+        annot_kws={"size": 9, "color": "white"},
+    )
+
+    ax.set_title(
+        "Confusion Matrix — Random Forest on NSL-KDD",
+        fontsize=14, color="white", pad=16, fontweight="bold"
+    )
+    ax.set_xlabel("Predicted Label", fontsize=11, color="#94a3b8", labelpad=10)
+    ax.set_ylabel("True Label",      fontsize=11, color="#94a3b8", labelpad=10)
+    ax.tick_params(colors="#94a3b8", labelsize=9)
+
+    plt.xticks(rotation=45, ha="right")
+    plt.yticks(rotation=0)
+    plt.tight_layout()
+
+    cm_path = "reports/confusion_matrix.png"
+    plt.savefig(cm_path, dpi=150, bbox_inches="tight",
+                facecolor=fig.get_facecolor())
+    plt.close()
+    print(f"      Saved: {cm_path}")
+
+    # ── Chart 2: Feature Importance ───────────────
+    print("      Generating feature importance chart...")
+
+    importances   = model.feature_importances_
+    feat_series   = pd.Series(importances, index=feature_names)
+    top20         = feat_series.sort_values(ascending=True).tail(20)
+
+    fig, ax = plt.subplots(figsize=(10, 8))
+    fig.patch.set_facecolor("#0d1117")
+    ax.set_facecolor("#0d1117")
+
+    colors = ["#38bdf8" if v < top20.max() * 0.5
+              else "#f87171" for v in top20.values]
+
+    bars = ax.barh(top20.index, top20.values, color=colors,
+                   edgecolor="none", height=0.6)
+
+    # Value labels on bars
+    for bar, val in zip(bars, top20.values):
+        ax.text(
+            val + 0.001, bar.get_y() + bar.get_height() / 2,
+            f"{val:.4f}", va="center", ha="left",
+            color="#94a3b8", fontsize=8
+        )
+
+    ax.set_title(
+        "Top 20 Feature Importances — Random Forest",
+        fontsize=13, color="white", pad=14, fontweight="bold"
+    )
+    ax.set_xlabel("Importance Score", fontsize=10,
+                  color="#94a3b8", labelpad=8)
+    ax.tick_params(colors="#94a3b8", labelsize=9)
+    ax.spines[:].set_visible(False)
+    ax.xaxis.grid(True, color="#1a2332", linewidth=0.7)
+    ax.set_axisbelow(True)
+
+    plt.tight_layout()
+
+    fi_path = "reports/feature_importance.png"
+    plt.savefig(fi_path, dpi=150, bbox_inches="tight",
+                facecolor=fig.get_facecolor())
+    plt.close()
+    print(f"      Saved: {fi_path}")
 
 
 # ─────────────────────────────────────────────
@@ -317,7 +407,7 @@ if __name__ == "__main__":
 
     model = train_model(X_train, y_train)
 
-    evaluate(model, X_test, y_test, label_encoder)
+    evaluate(model, X_test, y_test, label_encoder, feature_names)
 
     save_models(
         model, scaler, label_encoder,
