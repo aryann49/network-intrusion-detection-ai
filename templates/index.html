@@ -1,0 +1,433 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>AI Intrusion Detection System</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.6.1/socket.io.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet"/>
+  <style>
+    :root {
+      --bg:      #0b0f1a;
+      --surface: #111827;
+      --surf2:   #1a2235;
+      --border:  #1f2d42;
+      --border2: #263348;
+      --white:   #f0f4f8;
+      --text:    #94a3b8;
+      --muted:   #4b5a70;
+      --blue:    #38bdf8;
+      --green:   #34d399;
+      --red:     #f87171;
+      --orange:  #fb923c;
+      --purple:  #a78bfa;
+      --yellow:  #fbbf24;
+      --font:    'IBM Plex Sans', sans-serif;
+      --mono:    'IBM Plex Mono', monospace;
+    }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body { height: 100%; background: var(--bg); color: var(--white); font-family: var(--font); font-size: 14px; }
+
+    /* LAYOUT */
+    .layout { display: grid; grid-template-rows: 56px 1fr; height: 100vh; overflow: hidden; }
+
+    /* TOPBAR */
+    .topbar {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 0 24px; background: var(--surface);
+      border-bottom: 1px solid var(--border);
+    }
+    .brand { display: flex; align-items: center; gap: 10px; }
+    .brand-icon {
+      width: 32px; height: 32px; border-radius: 8px;
+      background: linear-gradient(135deg, var(--blue), #0ea5e9);
+      display: flex; align-items: center; justify-content: center; font-size: 16px;
+    }
+    .brand-name { font-size: 15px; font-weight: 700; color: var(--white); }
+    .brand-sub  { font-size: 11px; color: var(--muted); font-family: var(--mono); }
+    .topbar-right { display: flex; align-items: center; gap: 20px; }
+    .live-badge {
+      display: flex; align-items: center; gap: 7px;
+      background: rgba(52,211,153,0.1); border: 1px solid rgba(52,211,153,0.25);
+      border-radius: 20px; padding: 5px 12px;
+      font-size: 12px; font-weight: 600; color: var(--green); letter-spacing: 1px;
+    }
+    .live-dot { width: 7px; height: 7px; background: var(--green); border-radius: 50%; animation: blink 1.4s infinite; }
+    @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.3} }
+    .topbar-clock { font-family: var(--mono); font-size: 13px; color: var(--muted); }
+
+    /* CONTENT */
+    .content { display: grid; grid-template-columns: 300px 1fr; overflow: hidden; }
+
+    /* SIDEBAR */
+    .sidebar {
+      background: var(--surface); border-right: 1px solid var(--border);
+      display: flex; flex-direction: column; overflow-y: auto;
+    }
+    .sidebar::-webkit-scrollbar { width: 3px; }
+    .sidebar::-webkit-scrollbar-thumb { background: var(--border2); }
+    .sidebar-section { padding: 20px; border-bottom: 1px solid var(--border); }
+    .section-label {
+      font-size: 10px; font-weight: 600; letter-spacing: 1.5px;
+      text-transform: uppercase; color: var(--muted); margin-bottom: 14px;
+    }
+
+    /* Big stat */
+    .big-stat { margin-bottom: 18px; }
+    .big-stat:last-child { margin-bottom: 0; }
+    .big-stat-label { font-size: 12px; color: var(--text); margin-bottom: 4px; }
+    .big-stat-value { font-family: var(--mono); font-size: 38px; font-weight: 600; line-height: 1; }
+    .c-blue { color: var(--blue); } .c-red { color: var(--red); }
+    .c-green { color: var(--green); } .c-yellow { color: var(--yellow); }
+    .bar-track { height: 3px; background: var(--border2); border-radius: 2px; margin-top: 8px; }
+    .bar-fill  { height: 100%; border-radius: 2px; transition: width 0.6s ease; }
+
+    /* Attack rows */
+    .atk-row {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 10px 12px; border-radius: 8px; margin-bottom: 6px;
+      background: var(--surf2); border: 1px solid var(--border);
+    }
+    .atk-row:last-child { margin-bottom: 0; }
+    .atk-left { display: flex; align-items: center; gap: 10px; }
+    .atk-dot  { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+    .atk-name { font-size: 13px; font-weight: 600; color: var(--white); }
+    .atk-desc { font-size: 11px; color: var(--muted); }
+    .atk-count{ font-family: var(--mono); font-size: 22px; font-weight: 600; }
+
+    /* Chart */
+    .chart-wrap { display: flex; align-items: center; justify-content: center; padding: 4px 0 8px; }
+
+    /* MAIN PANEL */
+    .main-panel { display: flex; flex-direction: column; overflow: hidden; }
+    .main-header {
+      padding: 14px 24px; border-bottom: 1px solid var(--border);
+      display: flex; align-items: center; justify-content: space-between;
+      background: var(--surface); flex-shrink: 0;
+    }
+    .main-title { font-size: 13px; font-weight: 600; color: var(--white); }
+    .count-badge {
+      font-family: var(--mono); font-size: 12px; padding: 4px 10px;
+      border-radius: 6px; background: var(--surf2); border: 1px solid var(--border2); color: var(--text);
+    }
+
+    /* Table head */
+    .tbl-head {
+      display: grid;
+      grid-template-columns: 78px 82px 88px 1fr 110px 90px;
+      padding: 8px 24px; background: var(--surf2);
+      border-bottom: 1px solid var(--border); flex-shrink: 0;
+    }
+    .th { font-size: 10px; font-weight: 600; letter-spacing: 1px; text-transform: uppercase; color: var(--muted); }
+
+    /* Alert list */
+    .alert-list { flex: 1; overflow-y: auto; }
+    .alert-list::-webkit-scrollbar { width: 4px; }
+    .alert-list::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 2px; }
+
+    /* Alert row */
+    .arow {
+      display: grid; grid-template-columns: 78px 82px 88px 1fr 110px 90px;
+      padding: 10px 24px; border-bottom: 1px solid var(--border);
+      align-items: center; transition: background 0.15s;
+    }
+    .arow:hover { background: rgba(255,255,255,0.02); }
+    .arow.new-atk { animation: flashIn 0.3s ease; }
+    .arow.new-ok  { animation: fadeIn  0.2s ease; }
+    @keyframes flashIn { from{opacity:0;background:rgba(248,113,113,0.08)} to{opacity:1;background:transparent} }
+    @keyframes fadeIn  { from{opacity:0} to{opacity:1} }
+
+    .cell { font-size: 13px; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .c-id   { font-family: var(--mono); font-size: 12px; color: var(--muted); }
+    .c-time { font-family: var(--mono); font-size: 12px; color: var(--muted); }
+    .c-proto{ font-family: var(--mono); font-size: 12px; }
+    .c-bytes{ font-family: var(--mono); font-size: 12px; color: var(--muted); }
+
+    .det-main { font-size: 13px; font-weight: 600; }
+    .det-main.atk { color: var(--red); }
+    .det-main.ok  { color: var(--green); }
+    .det-sub  { font-size: 11px; color: var(--muted); margin-top: 1px; }
+
+    /* Pills */
+    .pill {
+      display: inline-flex; align-items: center; padding: 3px 9px;
+      border-radius: 4px; font-size: 11px; font-weight: 700;
+      letter-spacing: 0.7px; text-transform: uppercase;
+    }
+    .p-dos    { background: rgba(248,113,113,0.13); color: var(--red);    border: 1px solid rgba(248,113,113,0.28); }
+    .p-probe  { background: rgba(251,146,60,0.13);  color: var(--orange); border: 1px solid rgba(251,146,60,0.28);  }
+    .p-r2l    { background: rgba(167,139,250,0.13); color: var(--purple); border: 1px solid rgba(167,139,250,0.28); }
+    .p-u2r    { background: rgba(251,191,36,0.13);  color: var(--yellow); border: 1px solid rgba(251,191,36,0.28);  }
+    .p-normal { background: rgba(52,211,153,0.08);  color: var(--green);  border: 1px solid rgba(52,211,153,0.2);  }
+
+    /* Status bar */
+    .statusbar {
+      flex-shrink: 0; padding: 8px 24px; background: var(--surface);
+      border-top: 1px solid var(--border);
+      display: flex; align-items: center; gap: 12px;
+    }
+    .sb-label { font-family: var(--mono); font-size: 11px; color: var(--blue); flex-shrink: 0; }
+    .sb-text  { font-family: var(--mono); font-size: 11px; color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+    /* Empty */
+    .empty { display:flex; flex-direction:column; align-items:center; justify-content:center; height:220px; color:var(--muted); gap:10px; }
+    .empty-icon { font-size: 36px; opacity: 0.3; }
+    .empty-text { font-size: 13px; }
+  </style>
+</head>
+<body>
+<div class="layout">
+
+  <!-- TOPBAR -->
+  <div class="topbar">
+    <div class="brand">
+      <div class="brand-icon">🛡</div>
+      <div>
+        <div class="brand-name">NetGuard AI</div>
+        <div class="brand-sub">Intrusion Detection System · NSL-KDD · Random Forest</div>
+      </div>
+    </div>
+    <div class="topbar-right">
+      <div class="live-badge">
+        <div class="live-dot" id="liveDot"></div>
+        <span id="liveText">CONNECTING</span>
+      </div>
+      <div class="topbar-clock" id="clock">--:--:--</div>
+    </div>
+  </div>
+
+  <div class="content">
+
+    <!-- SIDEBAR -->
+    <div class="sidebar">
+
+      <!-- Overview numbers -->
+      <div class="sidebar-section">
+        <div class="section-label">Overview</div>
+
+        <div class="big-stat">
+          <div class="big-stat-label">Total Analyzed</div>
+          <div class="big-stat-value c-blue" id="statTotal">0</div>
+          <div class="bar-track"><div class="bar-fill" id="barTotal" style="width:0%;background:var(--blue)"></div></div>
+        </div>
+
+        <div class="big-stat">
+          <div class="big-stat-label">Threats Detected</div>
+          <div class="big-stat-value c-red" id="statAttacks">0</div>
+          <div class="bar-track"><div class="bar-fill" id="barAttacks" style="width:0%;background:var(--red)"></div></div>
+        </div>
+
+        <div class="big-stat">
+          <div class="big-stat-label">Normal Traffic</div>
+          <div class="big-stat-value c-green" id="statNormal">0</div>
+          <div class="bar-track"><div class="bar-fill" id="barNormal" style="width:0%;background:var(--green)"></div></div>
+        </div>
+
+        <div style="margin-top:16px;padding-top:16px;border-top:1px solid var(--border)">
+          <div class="big-stat-label">Attack Detection Rate</div>
+          <div class="big-stat-value c-yellow" id="statRate">—</div>
+        </div>
+      </div>
+
+      <!-- Attack categories -->
+      <div class="sidebar-section">
+        <div class="section-label">Attack Categories</div>
+        <div class="atk-row">
+          <div class="atk-left">
+            <div class="atk-dot" style="background:var(--red)"></div>
+            <div><div class="atk-name">DoS</div><div class="atk-desc">Denial of Service</div></div>
+          </div>
+          <div class="atk-count" style="color:var(--red)" id="countDos">0</div>
+        </div>
+        <div class="atk-row">
+          <div class="atk-left">
+            <div class="atk-dot" style="background:var(--orange)"></div>
+            <div><div class="atk-name">Probe</div><div class="atk-desc">Network Scanning</div></div>
+          </div>
+          <div class="atk-count" style="color:var(--orange)" id="countProbe">0</div>
+        </div>
+        <div class="atk-row">
+          <div class="atk-left">
+            <div class="atk-dot" style="background:var(--purple)"></div>
+            <div><div class="atk-name">R2L</div><div class="atk-desc">Remote to Local</div></div>
+          </div>
+          <div class="atk-count" style="color:var(--purple)" id="countR2l">0</div>
+        </div>
+        <div class="atk-row">
+          <div class="atk-left">
+            <div class="atk-dot" style="background:var(--yellow)"></div>
+            <div><div class="atk-name">U2R</div><div class="atk-desc">User to Root</div></div>
+          </div>
+          <div class="atk-count" style="color:var(--yellow)" id="countU2r">0</div>
+        </div>
+      </div>
+
+      <!-- Chart -->
+      <div class="sidebar-section">
+        <div class="section-label">Traffic Distribution</div>
+        <div class="chart-wrap">
+          <canvas id="attackChart" width="230" height="230"></canvas>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- MAIN PANEL -->
+    <div class="main-panel">
+
+      <div class="main-header">
+        <div class="main-title">⚡ Live Alert Feed</div>
+        <div class="count-badge" id="alertBadge">0 records</div>
+      </div>
+
+      <div class="tbl-head">
+        <div class="th">Record</div>
+        <div class="th">Time</div>
+        <div class="th">Protocol</div>
+        <div class="th">Detection Result</div>
+        <div class="th">Category</div>
+        <div class="th">Src Bytes</div>
+      </div>
+
+      <div class="alert-list" id="alertList">
+        <div class="empty">
+          <div class="empty-icon">📡</div>
+          <div class="empty-text">Waiting for traffic stream to start...</div>
+        </div>
+      </div>
+
+      <div class="statusbar">
+        <span class="sb-label">► LAST EVENT</span>
+        <span class="sb-text" id="lastEvent">IDS engine initializing...</span>
+      </div>
+
+    </div>
+
+  </div>
+</div>
+
+<script>
+  // Clock
+  setInterval(() => {
+    document.getElementById('clock').textContent = new Date().toTimeString().slice(0,8);
+  }, 1000);
+
+  // Chart
+  const chart = new Chart(
+    document.getElementById('attackChart').getContext('2d'), {
+      type: 'doughnut',
+      data: {
+        labels: ['Normal','DoS','Probe','R2L','U2R'],
+        datasets: [{
+          data: [1,0,0,0,0],
+          backgroundColor: [
+            'rgba(52,211,153,0.75)', 'rgba(248,113,113,0.75)',
+            'rgba(251,146,60,0.75)', 'rgba(167,139,250,0.75)',
+            'rgba(251,191,36,0.75)'
+          ],
+          borderColor: '#111827',
+          borderWidth: 3,
+          hoverOffset: 6,
+        }]
+      },
+      options: {
+        cutout: '62%', responsive: false,
+        plugins: {
+          legend: {
+            position: 'bottom',
+            labels: {
+              color:'#94a3b8',
+              font: { family:'IBM Plex Sans', size:12, weight:'500' },
+              padding:12, boxWidth:10, boxHeight:10,
+            }
+          }
+        }
+      }
+    }
+  );
+
+  function updateStats(s) {
+    document.getElementById('statTotal').textContent   = s.total.toLocaleString();
+    document.getElementById('statAttacks').textContent = s.attacks.toLocaleString();
+    document.getElementById('statNormal').textContent  = s.normal.toLocaleString();
+    document.getElementById('countDos').textContent    = s.dos   || 0;
+    document.getElementById('countProbe').textContent  = s.probe || 0;
+    document.getElementById('countR2l').textContent    = s.r2l   || 0;
+    document.getElementById('countU2r').textContent    = s.u2r   || 0;
+    document.getElementById('statRate').textContent    =
+      s.total > 0 ? ((s.attacks/s.total)*100).toFixed(1)+'%' : '—';
+
+    const max = Math.max(s.total, 1);
+    document.getElementById('barTotal').style.width   = Math.min(100, s.total  /max*100)+'%';
+    document.getElementById('barAttacks').style.width = Math.min(100, s.attacks/max*100)+'%';
+    document.getElementById('barNormal').style.width  = Math.min(100, s.normal /max*100)+'%';
+
+    chart.data.datasets[0].data = [s.normal, s.dos||0, s.probe||0, s.r2l||0, s.u2r||0];
+    chart.update('none');
+    document.getElementById('alertBadge').textContent = s.total.toLocaleString()+' records';
+  }
+
+  function buildRow(a, isNew) {
+    const atk  = a.is_attack;
+    const cat  = (a.category||'normal').toLowerCase();
+    const pc   = atk ? `p-${cat}` : 'p-normal';
+    const dc   = atk ? 'atk' : 'ok';
+    const icon = atk ? '⚠' : '✓';
+    const lbl  = atk ? a.category+' Attack' : 'Normal Traffic';
+    const sub  = atk ? `${a.label} · svc: ${a.service}` : `svc: ${a.service}`;
+    const cls  = isNew ? (atk ? 'new-atk' : 'new-ok') : '';
+    return `<div class="arow ${cls}">
+      <div class="cell c-id">#${String(a.id).padStart(5,'0')}</div>
+      <div class="cell c-time">${a.timestamp}</div>
+      <div class="cell c-proto">${(a.protocol||'').toUpperCase()}</div>
+      <div class="cell">
+        <div class="det-main ${dc}">${icon} ${lbl}</div>
+        <div class="det-sub">${sub}</div>
+      </div>
+      <div class="cell"><span class="pill ${pc}">${a.is_attack ? a.category : 'OK'}</span></div>
+      <div class="cell c-bytes">${(a.src_bytes||0).toLocaleString()}</div>
+    </div>`;
+  }
+
+  function renderList(alerts) {
+    const el = document.getElementById('alertList');
+    if (!alerts.length) return;
+    el.innerHTML = alerts.map(a => buildRow(a, false)).join('');
+  }
+
+  function prependRow(a) {
+    const el = document.getElementById('alertList');
+    const empty = el.querySelector('.empty');
+    if (empty) empty.remove();
+    el.insertAdjacentHTML('afterbegin', buildRow(a, true));
+    while (el.children.length > 80) el.removeChild(el.lastChild);
+    document.getElementById('lastEvent').textContent = a.is_attack
+      ? `⚠ Record #${a.id} — ${a.category} attack (${a.label}) · proto:${a.protocol} · svc:${a.service}`
+      : `✓ Record #${a.id} — Normal · proto:${a.protocol} · svc:${a.service}`;
+  }
+
+  const socket = io();
+  socket.on('connect', () => {
+    document.getElementById('liveDot').style.background = 'var(--green)';
+    document.getElementById('liveText').textContent = 'LIVE';
+  });
+  socket.on('disconnect', () => {
+    document.getElementById('liveDot').style.background = 'var(--red)';
+    document.getElementById('liveText').textContent = 'OFFLINE';
+  });
+  socket.on('initial_state', d => {
+    if (d.alerts?.length) renderList(d.alerts);
+    if (d.stats) updateStats(d.stats);
+  });
+  socket.on('new_alert', d => {
+    prependRow(d.alert);
+    updateStats(d.stats);
+  });
+  socket.on('stream_complete', () => {
+    document.getElementById('liveText').textContent = 'DONE';
+    document.getElementById('lastEvent').textContent = '✓ All traffic records processed. Stream complete.';
+  });
+</script>
+</body>
+</html>
