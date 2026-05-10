@@ -14,6 +14,7 @@ import sys
 import joblib
 import numpy as np
 import pandas as pd
+import shap
 
 import matplotlib
 matplotlib.use("Agg")   # non-interactive — works without a display window
@@ -28,6 +29,12 @@ from sklearn.metrics import (
     classification_report,
     confusion_matrix
 )
+
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+
+
+def project_path(*parts):
+    return os.path.join(BASE_DIR, *parts)
 
 # ─────────────────────────────────────────────
 #  COLUMN DEFINITIONS
@@ -124,8 +131,8 @@ def get_attack_category(label):
 # ─────────────────────────────────────────────
 
 def load_data():
-    train_path = "data/KDDTrain+.txt"
-    test_path  = "data/KDDTest+.txt"
+    train_path = project_path("data", "KDDTrain+.txt")
+    test_path  = project_path("data", "KDDTest+.txt")
 
     if not os.path.exists(train_path):
         print(f"\n[ERROR] Training file not found: {train_path}")
@@ -188,7 +195,7 @@ def preprocess(df_train, df_test):
         )
 
         column_encoders[col] = le
-        print(f"      Encoded '{col}' — {len(le.classes_)} unique values")
+        print(f"      Encoded '{col}' - {len(le.classes_)} unique values")
 
     # ── Encode target labels ────────────────────────
     label_encoder = LabelEncoder()
@@ -241,18 +248,192 @@ def train_model(X_train, y_train):
 
 
 # ─────────────────────────────────────────────
+#  STEP 4b: MULTI-MODEL COMPARISON
+# ─────────────────────────────────────────────
+
+def train_and_compare_models(X_train, y_train, X_test, y_test, label_encoder, rf_model):
+    """Train multiple ML models and compare performance."""
+    
+    from sklearn.tree import DecisionTreeClassifier
+    from sklearn.svm import LinearSVC
+    from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score
+    from datetime import datetime
+    import matplotlib.pyplot as plt
+    import json
+    import os
+
+    try:
+        from xgboost import XGBClassifier
+        HAS_XGB = True
+    except ImportError:
+        HAS_XGB = False
+        print("      [WARN] xgboost not installed - skipping XGBoost")
+
+    os.makedirs(project_path("models"), exist_ok=True)
+
+    candidates = [
+        ("Random Forest", rf_model, False),
+
+        ("Decision Tree",
+         DecisionTreeClassifier(
+             max_depth=20,
+             min_samples_split=5,
+             random_state=42
+         ),
+         True),
+
+        ("Linear SVM",
+         LinearSVC(
+             max_iter=3000,
+             random_state=42
+         ),
+         True),
+    ]
+
+    if HAS_XGB:
+        candidates.append((
+            "XGBoost",
+            XGBClassifier(
+                n_estimators=100,
+                max_depth=6,
+                eval_metric="mlogloss",
+                random_state=42,
+                verbosity=0
+            ),
+            True
+        ))
+
+    results = []
+
+    for name, model, do_fit in candidates:
+
+        print(f"\n      [{name}] {'training...' if do_fit else 'using saved model'}")
+
+        if do_fit:
+            model.fit(X_train, y_train)
+
+            safe_name = name.lower().replace(" ", "_")
+
+            joblib.dump(model, project_path("models", f"{safe_name}.pkl"))
+
+            print(f"      Saved: models/{safe_name}.pkl")
+
+        y_pred = model.predict(X_test)
+
+        acc = round(
+            accuracy_score(y_test, y_pred) * 100,
+            2
+        )
+
+        prec = round(
+            precision_score(
+                y_test,
+                y_pred,
+                average="weighted",
+                zero_division=0
+            ) * 100,
+            2
+        )
+
+        rec = round(
+            recall_score(
+                y_test,
+                y_pred,
+                average="weighted",
+                zero_division=0
+            ) * 100,
+            2
+        )
+
+        f1 = round(
+            f1_score(
+                y_test,
+                y_pred,
+                average="weighted",
+                zero_division=0
+            ) * 100,
+            2
+        )
+
+        results.append({
+            "name": name,
+            "accuracy": acc,
+            "precision": prec,
+            "recall": rec,
+            "f1": f1
+        })
+
+        print(f"      -> Acc={acc}%  P={prec}%  R={rec}%  F1={f1}%")
+
+    # ---------------------------------------------------
+    # Best model
+    # ---------------------------------------------------
+
+    best = max(results, key=lambda x: x["f1"])
+
+    comparison = {
+        "models": results,
+        "best_model": best["name"],
+        "generated_at": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+    }
+
+    with open(project_path("models", "model_comparison.json"), "w", encoding="utf-8") as fh:
+        json.dump(comparison, fh, indent=2)
+
+    print(f"\n      OK Best model: {best['name']} (F1={best['f1']}%)")
+    print("      Saved: models/model_comparison.json")
+    with open(project_path("models", "best_model.txt"), "w", encoding="utf-8") as fh:
+        fh.write(best["name"])
+    print("      Saved: models/best_model.txt")
+
+    # ---------------------------------------------------
+    # Generate comparison chart
+    # ---------------------------------------------------
+
+    os.makedirs(project_path("static", "reports"), exist_ok=True)
+
+    model_names = [m["name"] for m in results]
+    f1_scores = [m["f1"] for m in results]
+
+    plt.figure(figsize=(10, 6))
+
+    bars = plt.bar(model_names, f1_scores)
+
+    plt.title("Model Comparison (F1 Score)")
+    plt.ylabel("F1 Score (%)")
+    plt.xlabel("Models")
+
+    for bar, score in zip(bars, f1_scores):
+        plt.text(
+            bar.get_x() + bar.get_width() / 2,
+            bar.get_height() + 0.5,
+            str(score),
+            ha='center'
+        )
+
+    plt.tight_layout()
+
+    plt.savefig(project_path("static", "reports", "model_comparison.png"))
+
+    plt.close()
+
+    print("      Saved: static/reports/model_comparison.png")
+
+
+# ─────────────────────────────────────────────
 #  STEP 4: EVALUATE
 # ─────────────────────────────────────────────
 
 def evaluate(model, X_test, y_test, label_encoder, feature_names):
-    print("\n[4/5] Evaluating model — generating charts...")
+    print("\n[4/5] Evaluating model - generating charts...")
 
-    os.makedirs("reports", exist_ok=True)
+    os.makedirs(project_path("static", "reports"), exist_ok=True)
+    shap_explainer = None
 
     y_pred = model.predict(X_test)
 
     accuracy = accuracy_score(y_test, y_pred)
-    print(f"\n      ✅ Accuracy : {accuracy * 100:.2f}%")
+    print(f"\n      OK Accuracy : {accuracy * 100:.2f}%")
 
     # Only use labels present in test set or predictions
     present_labels = sorted(set(y_test) | set(y_pred))
@@ -301,7 +482,7 @@ def evaluate(model, X_test, y_test, label_encoder, feature_names):
     plt.yticks(rotation=0)
     plt.tight_layout()
 
-    cm_path = "reports/confusion_matrix.png"
+    cm_path = project_path("static", "reports", "confusion_matrix.png")
     plt.savefig(cm_path, dpi=150, bbox_inches="tight",
                 facecolor=fig.get_facecolor())
     plt.close()
@@ -345,46 +526,98 @@ def evaluate(model, X_test, y_test, label_encoder, feature_names):
 
     plt.tight_layout()
 
-    fi_path = "reports/feature_importance.png"
+    fi_path = project_path("static", "reports", "feature_importance.png")
     plt.savefig(fi_path, dpi=150, bbox_inches="tight",
                 facecolor=fig.get_facecolor())
     plt.close()
     print(f"      Saved: {fi_path}")
+
+        # ── Chart 3: SHAP Summary ─────────────────────
+    print("      Generating SHAP summary plot...")
+
+    try:
+
+        # Use small sample for speed
+        sample_size = 500
+
+        X_sample = X_test[:sample_size]
+
+        # Create SHAP explainer
+        explainer = shap.TreeExplainer(model)
+        shap_explainer = explainer
+
+        # Calculate SHAP values
+        shap_values = explainer.shap_values(X_sample)
+
+        # Create figure
+        plt.figure(figsize=(10, 6))
+
+        shap.summary_plot(
+            shap_values,
+            X_sample,
+            feature_names=feature_names,
+            show=False
+        )
+
+        plt.tight_layout()
+
+        shap_path = project_path("static", "reports", "shap_summary.png")
+
+        plt.savefig(
+            shap_path,
+            dpi=150,
+            bbox_inches="tight"
+        )
+
+        plt.close()
+
+        print(f"      Saved: {shap_path}")
+
+    except Exception as e:
+
+        print(f"      SHAP generation failed: {e}")
+
+    return shap_explainer
 
 
 # ─────────────────────────────────────────────
 #  STEP 5: SAVE MODEL ARTIFACTS
 # ─────────────────────────────────────────────
 
-def save_models(model, scaler, label_encoder, column_encoders, feature_names):
+def save_models(model, scaler, label_encoder, column_encoders, feature_names,
+                shap_explainer=None):
     print("[5/5] Saving model artifacts to models/ folder...")
 
-    os.makedirs("models", exist_ok=True)
+    os.makedirs(project_path("models"), exist_ok=True)
 
     # Save the trained model
-    joblib.dump(model, "models/random_forest.pkl")
+    joblib.dump(model, project_path("models", "random_forest.pkl"))
     print("      Saved: models/random_forest.pkl")
 
     # Save the scaler
-    joblib.dump(scaler, "models/scaler.pkl")
+    joblib.dump(scaler, project_path("models", "scaler.pkl"))
     print("      Saved: models/scaler.pkl")
 
     # Save the label encoder (for decoding predictions)
-    joblib.dump(label_encoder, "models/label_encoder.pkl")
+    joblib.dump(label_encoder, project_path("models", "label_encoder.pkl"))
     print("      Saved: models/label_encoder.pkl")
 
     # Save ALL column encoders in one file
     # This is the fix for the LabelEncoder mismatch bug
-    joblib.dump(column_encoders, "models/column_encoders.pkl")
+    joblib.dump(column_encoders, project_path("models", "column_encoders.pkl"))
     print("      Saved: models/column_encoders.pkl")
 
     # Save feature column names (for correct ordering in stream.py)
-    joblib.dump(feature_names, "models/feature_names.pkl")
+    joblib.dump(feature_names, project_path("models", "feature_names.pkl"))
     print("      Saved: models/feature_names.pkl")
 
     # Save attack category map (for dashboard display)
-    joblib.dump(ATTACK_CATEGORY_MAP, "models/attack_category_map.pkl")
+    joblib.dump(ATTACK_CATEGORY_MAP, project_path("models", "attack_category_map.pkl"))
     print("      Saved: models/attack_category_map.pkl")
+
+    if shap_explainer is not None:
+        joblib.dump(shap_explainer, project_path("models", "shap_explainer.pkl"))
+        print("      Saved: models/shap_explainer.pkl")
 
 
 # ─────────────────────────────────────────────
@@ -393,7 +626,7 @@ def save_models(model, scaler, label_encoder, column_encoders, feature_names):
 
 if __name__ == "__main__":
     print("=" * 55)
-    print("  NSL-KDD Intrusion Detection — Training Pipeline")
+    print("  NSL-KDD Intrusion Detection - Training Pipeline")
     print("=" * 55)
 
     df_train, df_test = load_data()
@@ -407,14 +640,18 @@ if __name__ == "__main__":
 
     model = train_model(X_train, y_train)
 
-    evaluate(model, X_test, y_test, label_encoder, feature_names)
+    shap_explainer = evaluate(model, X_test, y_test, label_encoder, feature_names)
+
+    print("\n[4b/5] Multi-model comparison...")
+    train_and_compare_models(X_train, y_train, X_test, y_test, label_encoder, model)
 
     save_models(
         model, scaler, label_encoder,
-        column_encoders, feature_names
+        column_encoders, feature_names,
+        shap_explainer
     )
 
     print("\n" + "=" * 55)
-    print("  ✅ Training complete!")
+    print("  OK Training complete!")
     print("  You can now run:  python app.py")
     print("=" * 55)

@@ -1,6 +1,9 @@
 data/
 models/
 notebooks/
+logs/
+reports/
+static/reports/
 __pycache__/
 *.pyc
 *.pkl

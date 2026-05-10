@@ -1,0 +1,40 @@
+# Dataset and model artifacts are mounted at runtime.
+data/
+models/
+
+# Runtime output.
+logs/
+static/reports/
+
+# Source control and local environments.
+.git/
+.gitignore
+.venv/
+venv/
+env/
+.env/
+.env
+*.env
+
+# Python cache.
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+
+# IDE, OS, and notebooks.
+.vscode/
+.idea/
+*.swp
+*.swo
+.DS_Store
+Thumbs.db
+notebooks/
+*.ipynb
+.ipynb_checkpoints/
+
+# Local tests/docs are not needed in the runtime image.
+tests/
+test_*.py
+README.md

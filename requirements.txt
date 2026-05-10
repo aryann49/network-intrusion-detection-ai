@@ -1,8 +1,13 @@
 flask
 flask-socketio
+simple-websocket
 pandas
 numpy
 scikit-learn
 joblib
 matplotlib
 seaborn
+xgboost
+shap
+reportlab
+scapy
